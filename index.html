@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spine 4.2.43 - Pulse Irelia</title>
-    <!-- 공식 CDN 사용 -->
+    <title>Spine 4.2.43 - Mouse Control</title>
     <script src="https://unpkg.com/@esotericsoftware/spine-player@4.2.43/dist/iife/spine-player.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/@esotericsoftware/spine-player@4.2.43/dist/spine-player.css">
     <style>
@@ -21,41 +20,35 @@
     let mouseX = 0;
     let mouseY = 0;
 
-    // 마우스 좌표 감지 (전체 화면 기준)
+    // 마우스 좌표 업데이트
     window.addEventListener('mousemove', (e) => {
-        // 중앙을 0으로 잡고 -1 ~ 1 범위로 계산
         mouseX = (e.clientX / window.innerWidth) * 2 - 1;
         mouseY = (e.clientY / window.innerHeight) * 2 - 1;
     });
 
     new spine.SpinePlayer("player-container", {
-        // 공식 문서 권장 방식: 직접 파일명 기입
         jsonUrl: "Pulse_Irelia.json",
         atlasUrl: "Pulse_Irelia.atlas",
         animation: "animation",
         premultipliedAlpha: true,
-        showControls: false, // UI 숨김
-        alpha: true,         // 배경 투명 허용
+        showControls: true,  // UI 열기
+        alpha: true,
         backgroundColor: "#000000",
-        
-        // 성공적으로 로드되었을 때 실행
         success: (player) => {
-            // 본 찾기
             headBone = player.skeleton.findBone("Head_Ctrl");
-            if (!headBone) {
-                console.warn("Head_Ctrl 본을 찾을 수 없습니다. 이름을 확인하세요.");
-            }
         },
-
-        // 매 프레임 실행되는 업데이트 로직
+        // update 함수에서 본의 위치를 강제로 고정
         update: (player, delta) => {
             if (headBone) {
-                // '팍팍' 움직이게 하기 위해 배율을 250으로 설정
-                // Spine 좌표계는 위가 +, 아래가 -이므로 Y축에 마이너스 곱함
-                const moveScale = 250; 
+                const moveScale = 300; // 더 팍팍 움직이게 300으로 상향
                 
+                // 마우스 위치 대입
                 headBone.x = mouseX * moveScale;
                 headBone.y = -mouseY * moveScale;
+                
+                // 중요: 애니메이션이 본을 매번 초기 위치로 돌려놓지 못하게 
+                // 해당 본의 위치를 수동으로 업데이트했다고 선언합니다.
+                headBone.update(); 
             }
         }
     });
