@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Spine Player - Pulse Irelia</title>
+    <!-- 버전 4.2 안정판 CSS -->
     <link rel="stylesheet" href="https://unpkg.com/@esotericsoftware/spine-player@4.2/dist/spine-player.css">
     <script src="https://unpkg.com/@esotericsoftware/spine-player@4.2/dist/iife/spine-player.js"></script>
     <style>
-        body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        body { margin: 0; background: #111; overflow: hidden; }
+        /* UI가 잘 보이도록 플레이어 크기를 화면에 꽉 맞춤 */
         #player-container { width: 100vw; height: 100vh; }
     </style>
 </head>
@@ -16,7 +18,7 @@
         let mouseX = 0;
         let mouseY = 0;
 
-        // 마우스 좌표 실시간 업데이트
+        // 마우스 위치를 실시간으로 전역 저장
         window.addEventListener("mousemove", (e) => {
             mouseX = e.clientX;
             mouseY = e.clientY;
@@ -28,7 +30,7 @@
             animation: "animation",
             premultipliedAlpha: true,
             backgroundColor: "#00000000",
-            showControls: true, // 다시 컨트롤러 보이게 설정
+            showControls: true, // 하단 UI 강제 활성화
             success: function (player) {
                 const skeleton = player.skeleton;
                 const headBone = skeleton.findBone("Head_Ctrl");
@@ -38,33 +40,20 @@
                     return;
                 }
 
-                // 설정값 (움직임이 작으면 sensitivity를 1.0 이상으로 올리세요)
-                const config = {
-                    sensitivity: 2.0, 
-                    lerpSpeed: 0.1    // 부드러운 정도
-                };
-
-                let currentX = 0;
-                let currentY = 0;
-
-                // Spine Player의 내부 로직 직후에 실행되는 업데이트 루프
-                player.onUpdate = function (delta) {
+                // 매 프레임 애니메이션 계산이 끝난 직후 실행
+                player.onUpdate = function () {
+                    // 1. 캔버스 기준 좌표 구하기
                     const rect = player.canvas.getBoundingClientRect();
+                    
+                    // 2. 마우스 픽셀 좌표를 Spine 내부 좌표계로 변환 (1:1 매칭용)
+                    // Spine의 0,0은 보통 캔버스 중앙이므로 마우스 위치에서 중앙값을 뺌
                     const centerX = rect.left + rect.width / 2;
                     const centerY = rect.top + rect.height / 2;
 
-                    // 마우스 목표치 계산
-                    const targetX = (mouseX - centerX) * config.sensitivity;
-                    const targetY = -(mouseY - centerY) * config.sensitivity;
-
-                    // 부드러운 이동 (Lerp)
-                    currentX += (targetX - currentX) * config.lerpSpeed;
-                    currentY += (targetY - currentY) * config.lerpSpeed;
-
-                    // [핵심] 애니메이션을 완전히 덮어쓰기 (Override)
-                    // 애니메이션 키프레임이 0으로 돌려놓아도 여기서 다시 고정합니다.
-                    headBone.x = currentX;
-                    headBone.y = currentY;
+                    // 3. 뼈대 위치 강제 오버라이드
+                    // 애니메이션 키프레임이 있어도 덮어버립니다.
+                    headBone.x = (mouseX - centerX);
+                    headBone.y = -(mouseY - centerY); // 브라우저와 Spine은 Y축 방향이 반대
                 };
             }
         });
