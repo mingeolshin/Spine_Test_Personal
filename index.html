@@ -3,17 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Spine Player - Pulse Irelia</title>
+    <!-- 공식 CSS 로드 (UI 정상화) -->
     <link rel="stylesheet" href="https://unpkg.com/@esotericsoftware/spine-player@4.2/dist/spine-player.css">
     <script src="https://unpkg.com/@esotericsoftware/spine-player@4.2/dist/iife/spine-player.js"></script>
     <style>
-        /* UI 실종 방지를 위한 절대 좌표 설정 */
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #111; overflow: hidden; }
-        #player-container { 
-            position: absolute;
-            top: 0; left: 0; width: 100vw; height: 100vh; 
-        }
-        /* 플레이어 내부 UI 요소들이 캔버스 뒤로 숨지 않게 강제 설정 */
-        .spine-player { background: transparent !important; }
+        #player-container { width: 100vw; height: 100vh; }
     </style>
 </head>
 <body>
@@ -21,6 +16,7 @@
     <script>
         let mX = 0, mY = 0;
 
+        // 전역 마우스 위치 트래킹
         window.addEventListener("mousemove", (e) => {
             mX = e.clientX;
             mY = e.clientY;
@@ -32,32 +28,31 @@
             animation: "animation",
             premultipliedAlpha: true,
             backgroundColor: "#00000000",
-            showControls: true, // UI 무조건 표시
+            showControls: true, // UI 표시
             success: function (player) {
                 const skeleton = player.skeleton;
-                const head = skeleton.findBone("Head_Ctrl");
+                const headBone = skeleton.findBone("Head_Ctrl");
 
-                if (!head) {
+                if (!headBone) {
                     console.error("Head_Ctrl 본을 찾을 수 없습니다.");
                     return;
                 }
 
-                // 플레이어의 그리기 루프에 직접 개입
+                // 공식 문서: 애니메이션 적용 후 렌더링 직전에 뼈대 위치를 가로챔
                 player.onUpdate = function (delta) {
                     const rect = player.canvas.getBoundingClientRect();
+                    
+                    // 1. 마우스 좌표를 Spine 내부 좌표계로 변환 (중앙 0,0 기준)
                     const centerX = rect.left + rect.width / 2;
                     const centerY = rect.top + rect.height / 2;
 
-                    // 1. 마우스 좌표 1:1 계산
-                    const targetX = mX - centerX;
-                    const targetY = -(mY - centerY);
+                    // 2. 뼈대 좌표 오버라이드 (1:1 매칭)
+                    // 애니메이션이 headBone을 0으로 돌려놓아도 여기서 다시 마우스 좌표를 꽂습니다.
+                    headBone.x = (mX - centerX);
+                    headBone.y = -(mY - centerY); 
 
-                    // 2. 강제 좌표 대입 (Override)
-                    head.x = targetX;
-                    head.y = targetY;
-
-                    // 3. [중요] 좌표 변경 후 즉시 월드 트랜스폼 업데이트
-                    // 이걸 안 하면 애니메이션이 계산된 후의 결과로 렌더링되어 머리가 멈춰 보입니다.
+                    // 3. 중요: 변경된 뼈대 값을 월드 좌표계에 즉시 반영
+                    // 이 호출이 없으면 변경된 x, y값이 화면 렌더링에 계산되지 않습니다.
                     skeleton.updateWorldTransform();
                 };
             }
