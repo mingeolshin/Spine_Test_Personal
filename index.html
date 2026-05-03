@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Spine Web Player - Mouse Tracking</title>
-    <!-- Spine Player JS/CSS (버전은 본인의 Spine 파일 버전에 맞춰 수정 가능) -->
-    <link rel="stylesheet" href="https://unpkg.com/@esotericsoftware/spine-player@4.1/dist/spine-player.css">
-    <script src="https://unpkg.com/@esotericsoftware/spine-player@4.1/dist/spine-player.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spine 4.2.43 Player - Pulse Irelia</title>
+    <!-- 구체적인 4.2 버전 명시 -->
+    <script src="https://unpkg.com/@esotericsoftware/spine-player@4.2.43/dist/iife/spine-player.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/@esotericsoftware/spine-player@4.2.43/dist/spine-player.css">
     <style>
-        body { margin: 0; background: #222; }
+        body { margin: 0; padding: 0; background: #000; overflow: hidden; }
         #player-container { width: 100vw; height: 100vh; }
     </style>
 </head>
@@ -16,45 +17,39 @@
 <div id="player-container"></div>
 
 <script>
-    let mouseX = 0;
-    let mouseY = 0;
+    let player;
+    let headBone;
+    let targetX = 0, targetY = 0;
 
-    // 마우스 좌표 추적
-    window.addEventListener("mousemove", (e) => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
+    // 마우스 이동 감지
+    window.addEventListener('mousemove', (e) => {
+        // 화면 중앙 (0,0) 기준 -1.0 ~ 1.0 범위
+        targetX = (e.clientX / window.innerWidth) * 2 - 1;
+        targetY = (e.clientY / window.innerHeight) * 2 - 1;
     });
 
-    new spine.SpinePlayer("player-container", {
-        jsonUrl: "Pulse_Irelia.json",
-        atlasUrl: "Pulse_Irelia.atlas",
-        animation: "animation", // 실제 파일 내 애니메이션 이름으로 변경하세요
+    player = new spine.SpinePlayer("player-container", {
+        skeleton: "Pulse_Irelia.json",
+        atlas: "Pulse_Irelia.atlas",
+        animation: "animation",
         premultipliedAlpha: true,
-        backgroundColor: "#222222",
-        showControls: true,
-        
-        success: function (player) {
-            const skeleton = player.skeleton;
-            // 이미지에서 확인된 'Head_Ctrl' 본을 찾습니다.
-            const headBone = skeleton.findBone("Head_Ctrl");
+        backgroundColor: "#00000000",
+        alpha: true,
+        showControls: false,
+        success: (player) => {
+            // 본 찾기
+            headBone = player.skeleton.findBone("Head_Ctrl");
+        },
+        update: (player, delta) => {
+            if (headBone) {
+                // 팍팍 움직이게 하기 위한 배율 (더 과감하게 200으로 설정)
+                const power = 200; 
 
-            player.onUpdate = (delta) => {
-                if (headBone) {
-                    // 플레이어 컨테이너 내 상대 좌표 계산
-                    const rect = player.canvas.getBoundingClientRect();
-                    const centerX = rect.left + rect.width / 2;
-                    const centerY = rect.top + rect.height / 2;
-
-                    // 마우스 위치와 캐릭터 중심 사이의 거리 계산 (민감도 조절 필요)
-                    // Spine 좌표계는 Y축이 위로 향하므로 부호를 뒤집습니다.
-                    const targetX = (mouseX - centerX) * 0.5; 
-                    const targetY = -(mouseY - centerY) * 0.5;
-
-                    // 본의 위치를 마우스 방향으로 업데이트 (Override)
-                    headBone.x = targetX;
-                    headBone.y = targetY;
-                }
-            };
+                // 반응 속도를 늦추는 lerp 등을 쓰지 않고 
+                // 마우스 위치에 따라 본의 X, Y 좌표를 즉각 대입합니다.
+                headBone.x = targetX * power;
+                headBone.y = -targetY * power; // Spine은 상단이 +
+            }
         }
     });
 </script>
