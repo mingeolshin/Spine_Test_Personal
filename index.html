@@ -3,25 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <title>Spine Player - Pulse Irelia</title>
-    <!-- 버전 4.2 안정판 CSS -->
     <link rel="stylesheet" href="https://unpkg.com/@esotericsoftware/spine-player@4.2/dist/spine-player.css">
     <script src="https://unpkg.com/@esotericsoftware/spine-player@4.2/dist/iife/spine-player.js"></script>
     <style>
-        body { margin: 0; background: #111; overflow: hidden; }
-        /* UI가 잘 보이도록 플레이어 크기를 화면에 꽉 맞춤 */
-        #player-container { width: 100vw; height: 100vh; }
+        /* UI 실종 방지를 위한 절대 좌표 설정 */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #111; overflow: hidden; }
+        #player-container { 
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh; 
+        }
+        /* 플레이어 내부 UI 요소들이 캔버스 뒤로 숨지 않게 강제 설정 */
+        .spine-player { background: transparent !important; }
     </style>
 </head>
 <body>
     <div id="player-container"></div>
     <script>
-        let mouseX = 0;
-        let mouseY = 0;
+        let mX = 0, mY = 0;
 
-        // 마우스 위치를 실시간으로 전역 저장
         window.addEventListener("mousemove", (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
+            mX = e.clientX;
+            mY = e.clientY;
         });
 
         new spine.SpinePlayer("player-container", {
@@ -30,30 +32,33 @@
             animation: "animation",
             premultipliedAlpha: true,
             backgroundColor: "#00000000",
-            showControls: true, // 하단 UI 강제 활성화
+            showControls: true, // UI 무조건 표시
             success: function (player) {
                 const skeleton = player.skeleton;
-                const headBone = skeleton.findBone("Head_Ctrl");
+                const head = skeleton.findBone("Head_Ctrl");
 
-                if (!headBone) {
+                if (!head) {
                     console.error("Head_Ctrl 본을 찾을 수 없습니다.");
                     return;
                 }
 
-                // 매 프레임 애니메이션 계산이 끝난 직후 실행
-                player.onUpdate = function () {
-                    // 1. 캔버스 기준 좌표 구하기
+                // 플레이어의 그리기 루프에 직접 개입
+                player.onUpdate = function (delta) {
                     const rect = player.canvas.getBoundingClientRect();
-                    
-                    // 2. 마우스 픽셀 좌표를 Spine 내부 좌표계로 변환 (1:1 매칭용)
-                    // Spine의 0,0은 보통 캔버스 중앙이므로 마우스 위치에서 중앙값을 뺌
                     const centerX = rect.left + rect.width / 2;
                     const centerY = rect.top + rect.height / 2;
 
-                    // 3. 뼈대 위치 강제 오버라이드
-                    // 애니메이션 키프레임이 있어도 덮어버립니다.
-                    headBone.x = (mouseX - centerX);
-                    headBone.y = -(mouseY - centerY); // 브라우저와 Spine은 Y축 방향이 반대
+                    // 1. 마우스 좌표 1:1 계산
+                    const targetX = mX - centerX;
+                    const targetY = -(mY - centerY);
+
+                    // 2. 강제 좌표 대입 (Override)
+                    head.x = targetX;
+                    head.y = targetY;
+
+                    // 3. [중요] 좌표 변경 후 즉시 월드 트랜스폼 업데이트
+                    // 이걸 안 하면 애니메이션이 계산된 후의 결과로 렌더링되어 머리가 멈춰 보입니다.
+                    skeleton.updateWorldTransform();
                 };
             }
         });
