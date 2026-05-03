@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spine 4.2.43 Player - Pulse Irelia</title>
-    <!-- 구체적인 4.2 버전 명시 -->
+    <title>Spine 4.2.43 - Fixed</title>
     <script src="https://unpkg.com/@esotericsoftware/spine-player@4.2.43/dist/iife/spine-player.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/@esotericsoftware/spine-player@4.2.43/dist/spine-player.css">
     <style>
@@ -17,38 +16,31 @@
 <div id="player-container"></div>
 
 <script>
-    let player;
     let headBone;
     let targetX = 0, targetY = 0;
 
-    // 마우스 이동 감지
     window.addEventListener('mousemove', (e) => {
-        // 화면 중앙 (0,0) 기준 -1.0 ~ 1.0 범위
         targetX = (e.clientX / window.innerWidth) * 2 - 1;
         targetY = (e.clientY / window.innerHeight) * 2 - 1;
     });
 
-    player = new spine.SpinePlayer("player-container", {
-        skeleton: "Pulse_Irelia.json",
-        atlas: "Pulse_Irelia.atlas",
+    new spine.SpinePlayer("player-container", {
+        // 최신 버전에서 URL 인식을 위해 jsonUrl 사용
+        jsonUrl: "Pulse_Irelia.json", 
+        atlasUrl: "Pulse_Irelia.atlas",
         animation: "animation",
         premultipliedAlpha: true,
         backgroundColor: "#00000000",
         alpha: true,
         showControls: false,
         success: (player) => {
-            // 본 찾기
             headBone = player.skeleton.findBone("Head_Ctrl");
         },
         update: (player, delta) => {
             if (headBone) {
-                // 팍팍 움직이게 하기 위한 배율 (더 과감하게 200으로 설정)
-                const power = 200; 
-
-                // 반응 속도를 늦추는 lerp 등을 쓰지 않고 
-                // 마우스 위치에 따라 본의 X, Y 좌표를 즉각 대입합니다.
+                const power = 200; // 팍팍 움직이게!
                 headBone.x = targetX * power;
-                headBone.y = -targetY * power; // Spine은 상단이 +
+                headBone.y = -targetY * power;
             }
         }
     });
