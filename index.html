@@ -8,62 +8,63 @@
     <style>
         body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
         #player-container { width: 100vw; height: 100vh; }
-        /* 클릭 시 일시정지되는 기본 동작 방지를 위해 캔버스 위의 레이어 클릭 차단 */
-        canvas { pointer-events: none; } 
     </style>
 </head>
 <body>
     <div id="player-container"></div>
     <script>
+        let mouseX = 0;
+        let mouseY = 0;
+
+        // 마우스 좌표 실시간 업데이트
+        window.addEventListener("mousemove", (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
         new spine.SpinePlayer("player-container", {
             jsonUrl: "Pulse_Irelia.json",
             atlasUrl: "Pulse_Irelia.atlas",
             animation: "animation",
             premultipliedAlpha: true,
             backgroundColor: "#00000000",
-            showControls: false, // 재생 버튼 등 컨트롤러 숨김 (깔끔하게)
+            showControls: true, // 다시 컨트롤러 보이게 설정
             success: function (player) {
-                const headBone = player.skeleton.findBone("Head_Ctrl");
-                if (!headBone) return;
+                const skeleton = player.skeleton;
+                const headBone = skeleton.findBone("Head_Ctrl");
 
-                // 초기 위치 저장 (애니메이션 기준점)
-                const originX = headBone.x;
-                const originY = headBone.y;
+                if (!headBone) {
+                    console.error("Head_Ctrl 본을 찾을 수 없습니다.");
+                    return;
+                }
 
-                let targetX = 0;
-                let targetY = 0;
+                // 설정값 (움직임이 작으면 sensitivity를 1.0 이상으로 올리세요)
+                const config = {
+                    sensitivity: 2.0, 
+                    lerpSpeed: 0.1    // 부드러운 정도
+                };
+
                 let currentX = 0;
                 let currentY = 0;
 
-                // 설정값
-                const config = {
-                    sensitivity: 0.15, // 마우스 따라가는 범위 (적당히 조절)
-                    lerpSpeed: 0.05    // 따라오는 부드러움 (낮을수록 묵직하게 따라옴)
-                };
-
-                window.addEventListener("mousemove", (e) => {
+                // Spine Player의 내부 로직 직후에 실행되는 업데이트 루프
+                player.onUpdate = function (delta) {
                     const rect = player.canvas.getBoundingClientRect();
                     const centerX = rect.left + rect.width / 2;
                     const centerY = rect.top + rect.height / 2;
 
-                    // 마우스 좌표 (중앙 0,0 기준)
-                    targetX = (e.clientX - centerX) * config.sensitivity;
-                    targetY = -(e.clientY - centerY) * config.sensitivity;
-                });
+                    // 마우스 목표치 계산
+                    const targetX = (mouseX - centerX) * config.sensitivity;
+                    const targetY = -(mouseY - centerY) * config.sensitivity;
 
-                // 애니메이션 업데이트 루프
-                player.onUpdate = function() {
-                    // 현재 위치를 목표 위치로 부드럽게 이동 (Lerp)
+                    // 부드러운 이동 (Lerp)
                     currentX += (targetX - currentX) * config.lerpSpeed;
                     currentY += (targetY - currentY) * config.lerpSpeed;
 
-                    /**
-                     * 핵심: 애니메이션 값을 무시하지 않고 '더해줍니다' (Mixing)
-                     * 만약 애니메이션이 뼈대를 강제로 고정한다면 
-                     * 아래처럼 headBone.x에 값을 직접 더하는 로직이 필요합니다.
-                     */
-                    headBone.x += currentX; 
-                    headBone.y += currentY;
+                    // [핵심] 애니메이션을 완전히 덮어쓰기 (Override)
+                    // 애니메이션 키프레임이 0으로 돌려놓아도 여기서 다시 고정합니다.
+                    headBone.x = currentX;
+                    headBone.y = currentY;
                 };
             }
         });
