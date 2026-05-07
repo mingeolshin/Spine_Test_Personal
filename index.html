@@ -40,7 +40,7 @@
         // update 함수에서 본의 위치를 강제로 고정
         update: (player, delta) => {
             if (headBone) {
-                const moveScale = 10000; // 더 팍팍 움직이게 300으로 상향
+                const moveScale = 1000; // 더 팍팍 움직이게 300으로 상향
                 
                 // 마우스 위치 대입
                 headBone.x = mouseX * moveScale;
