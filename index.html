@@ -40,11 +40,11 @@
         // update 함수에서 본의 위치를 강제로 고정
         update: (player, delta) => {
             if (headBone) {
-                const moveScale = 800; // 더 팍팍 움직이게 300으로 상향
+                const moveScale = 10000; // 더 팍팍 움직이게 300으로 상향
                 
                 // 마우스 위치 대입
-                headBone.x = mouseY * moveScale;
-                headBone.y = -mouseX * moveScale;
+                headBone.x = mouseX * moveScale;
+                headBone.y = -mouseY * moveScale;
                 
                 // 중요: 애니메이션이 본을 매번 초기 위치로 돌려놓지 못하게 
                 // 해당 본의 위치를 수동으로 업데이트했다고 선언합니다.
